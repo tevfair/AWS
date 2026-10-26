@@ -8,14 +8,117 @@ Terraform configuration for a low-idle-cost retrieval-augmented generation (RAG)
 
 Documents are uploaded to a private S3 bucket and ingested by Amazon Bedrock. Titan Text Embeddings V2 converts document chunks into vectors stored in S3 Vectors. At query time, the Knowledge Base retrieves relevant chunks and Nova Lite generates a grounded answer.
 
-### Components
+### Components and Terraform resources
 
-- Amazon Bedrock Knowledge Base
-- Private, encrypted, and versioned S3 document bucket
-- Amazon S3 Vectors index
-- Amazon Titan Text Embeddings V2
-- Amazon Nova Lite for on-demand answer generation
-- Least-privilege AWS IAM roles and policies
+#### Amazon Bedrock Knowledge Base
+
+```hcl main.tf
+resource "aws_bedrockagent_knowledge_base" "this" {
+  name     = "${local.name_prefix}-kb"
+  role_arn = aws_iam_role.knowledge_base.arn
+
+  knowledge_base_configuration {
+    type = "VECTOR"
+    vector_knowledge_base_configuration {
+      embedding_model_arn = data.aws_bedrock_foundation_model.embedding.model_arn
+    }
+  }
+
+  storage_configuration {
+    type = "S3_VECTORS"
+    s3_vectors_configuration {
+      index_arn = aws_s3vectors_index.knowledge_base.index_arn
+    }
+  }
+}
+```
+
+#### S3 document data source
+
+```hcl main.tf
+resource "aws_bedrockagent_data_source" "documents" {
+  knowledge_base_id    = aws_bedrockagent_knowledge_base.this.id
+  name                 = "${local.name_prefix}-documents"
+  data_deletion_policy = "DELETE"
+
+  data_source_configuration {
+    type = "S3"
+    s3_configuration {
+      bucket_arn = aws_s3_bucket.documents.arn
+    }
+  }
+}
+```
+
+#### Private document bucket
+
+```hcl main.tf
+resource "aws_s3_bucket" "documents" {
+  bucket        = "${local.name_prefix}-documents"
+  force_destroy = var.force_destroy
+}
+
+resource "aws_s3_bucket_public_access_block" "documents" {
+  bucket                  = aws_s3_bucket.documents.id
+  block_public_acls       = true
+  block_public_policy     = true
+  ignore_public_acls      = true
+  restrict_public_buckets = true
+}
+```
+
+Encryption and versioning are managed by:
+
+- `aws_s3_bucket_server_side_encryption_configuration.documents`
+- `aws_s3_bucket_versioning.documents`
+
+#### S3 Vectors storage
+
+```hcl main.tf
+resource "aws_s3vectors_vector_bucket" "knowledge_base" {
+  vector_bucket_name = "${local.name_prefix}-vectors"
+  force_destroy      = var.force_destroy
+}
+
+resource "aws_s3vectors_index" "knowledge_base" {
+  vector_bucket_name = aws_s3vectors_vector_bucket.knowledge_base.vector_bucket_name
+  index_name         = "knowledge-base-index"
+  data_type          = "float32"
+  dimension          = var.embedding_dimensions
+  distance_metric    = "cosine"
+}
+```
+
+#### Bedrock models
+
+```hcl main.tf
+data "aws_bedrock_foundation_model" "selected" {
+  model_id = var.model_id
+}
+
+data "aws_bedrock_foundation_model" "embedding" {
+  model_id = var.embedding_model_id
+}
+```
+
+The defaults select Nova Lite for on-demand answer generation and Titan Text Embeddings V2 for document embeddings.
+
+#### IAM roles and policies
+
+```hcl main.tf
+resource "aws_iam_role" "knowledge_base" {
+  name               = "${local.name_prefix}-kb-role"
+  assume_role_policy = data.aws_iam_policy_document.knowledge_base_assume_role.json
+}
+
+resource "aws_iam_role_policy" "knowledge_base" {
+  name   = "bedrock-knowledge-base"
+  role   = aws_iam_role.knowledge_base.id
+  policy = data.aws_iam_policy_document.knowledge_base.json
+}
+```
+
+The project also optionally creates `aws_iam_role.bedrock_invocation` and `aws_iam_role_policy.bedrock_invoke` for Nova Lite invocation. See [`main.tf`](./main.tf) for the complete least-privilege policy statements.
 
 ## Prerequisites
 
@@ -26,7 +129,7 @@ Documents are uploaded to a private S3 bucket and ingested by Amazon Bedrock. Ti
 
 ## Authentication
 
-```shell
+```shell Terminal
 aws sso login --profile Terraformmm-local
 ```
 
@@ -34,7 +137,7 @@ aws sso login --profile Terraformmm-local
 
 From this directory:
 
-```shell
+```shell Terminal
 AWS_PROFILE=Terraformmm-local terraform init
 AWS_PROFILE=Terraformmm-local terraform validate
 AWS_PROFILE=Terraformmm-local terraform plan
@@ -55,7 +158,7 @@ The defaults use:
 
 ## Destroy
 
-```shell
+```shell Terminal
 AWS_PROFILE=Terraformmm-local terraform destroy
 ```
 
