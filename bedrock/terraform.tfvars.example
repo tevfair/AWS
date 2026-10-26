@@ -1,0 +1,13 @@
+aws_region = "us-east-1"
+model_id  = "amazon.nova-lite-v1:0"
+
+# Add specific workload role or user ARNs here. If left empty, this AWS
+# account's root principal is trusted, allowing account administrators to
+# delegate sts:AssumeRole through IAM policies.
+trusted_principal_arns = []
+
+tags = {
+  ManagedBy   = "Terraform"
+  Project     = "Bedrock"
+  Environment = "dev"
+}
