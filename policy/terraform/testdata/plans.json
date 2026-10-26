@@ -1,0 +1,188 @@
+{
+  "compliant_plan": {
+    "resource_changes": [
+      {
+        "address": "aws_s3_bucket_public_access_block.documents",
+        "mode": "managed",
+        "type": "aws_s3_bucket_public_access_block",
+        "change": {
+          "actions": ["create"],
+          "after": {
+            "block_public_acls": true,
+            "block_public_policy": true,
+            "ignore_public_acls": true,
+            "restrict_public_buckets": true
+          }
+        }
+      },
+      {
+        "address": "aws_s3_bucket_ownership_controls.documents",
+        "mode": "managed",
+        "type": "aws_s3_bucket_ownership_controls",
+        "change": {
+          "actions": ["create"],
+          "after": {
+            "rule": [{"object_ownership": "BucketOwnerEnforced"}]
+          }
+        }
+      },
+      {
+        "address": "aws_s3_bucket_server_side_encryption_configuration.documents",
+        "mode": "managed",
+        "type": "aws_s3_bucket_server_side_encryption_configuration",
+        "change": {
+          "actions": ["create"],
+          "after": {
+            "rule": [{
+              "apply_server_side_encryption_by_default": [{"sse_algorithm": "AES256"}]
+            }]
+          }
+        }
+      },
+      {
+        "address": "aws_s3_bucket_policy.documents",
+        "mode": "managed",
+        "type": "aws_s3_bucket_policy",
+        "change": {
+          "actions": ["create"],
+          "after": {
+            "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"DenyInsecureTransport\",\"Effect\":\"Deny\",\"Principal\":\"*\",\"Action\":\"s3:*\",\"Resource\":[\"arn:aws:s3:::example\",\"arn:aws:s3:::example/*\"],\"Condition\":{\"Bool\":{\"aws:SecureTransport\":\"false\"}}}]}"
+          }
+        }
+      },
+      {
+        "address": "aws_s3vectors_vector_bucket.knowledge_base",
+        "mode": "managed",
+        "type": "aws_s3vectors_vector_bucket",
+        "change": {
+          "actions": ["create"],
+          "after": {
+            "encryption_configuration": [{"sse_type": "AES256"}]
+          }
+        }
+      },
+      {
+        "address": "aws_s3vectors_vector_bucket_policy.knowledge_base",
+        "mode": "managed",
+        "type": "aws_s3vectors_vector_bucket_policy",
+        "change": {
+          "actions": ["create"],
+          "after": {
+            "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Sid\":\"DenyInsecureTransport\",\"Effect\":\"Deny\",\"Principal\":\"*\",\"Action\":\"s3vectors:*\",\"Resource\":\"arn:aws:s3vectors:us-east-1:123456789012:bucket/example/*\",\"Condition\":{\"Bool\":{\"aws:SecureTransport\":\"false\"}}}]}"
+          }
+        }
+      },
+      {
+        "address": "aws_iam_role.knowledge_base",
+        "mode": "managed",
+        "type": "aws_iam_role",
+        "change": {
+          "actions": ["create"],
+          "after": {
+            "assume_role_policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"bedrock.amazonaws.com\"},\"Action\":\"sts:AssumeRole\",\"Condition\":{\"StringEquals\":{\"aws:SourceAccount\":\"123456789012\"},\"ArnLike\":{\"aws:SourceArn\":\"arn:aws:bedrock:us-east-1:123456789012:knowledge-base/*\"}}}]}"
+          }
+        }
+      },
+      {
+        "address": "aws_iam_role_policy.knowledge_base",
+        "mode": "managed",
+        "type": "aws_iam_role_policy",
+        "change": {
+          "actions": ["create"],
+          "after": {
+            "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"bedrock:InvokeModel\",\"Resource\":\"arn:aws:bedrock:us-east-1::foundation-model/amazon.titan-embed-text-v2:0\"}]}"
+          }
+        }
+      }
+    ]
+  },
+  "insecure_plan": {
+    "resource_changes": [
+      {
+        "address": "aws_s3_bucket_public_access_block.documents",
+        "mode": "managed",
+        "type": "aws_s3_bucket_public_access_block",
+        "change": {
+          "actions": ["create"],
+          "after": {
+            "block_public_acls": false,
+            "block_public_policy": false,
+            "ignore_public_acls": false,
+            "restrict_public_buckets": false
+          }
+        }
+      },
+      {
+        "address": "aws_s3_bucket_ownership_controls.documents",
+        "mode": "managed",
+        "type": "aws_s3_bucket_ownership_controls",
+        "change": {
+          "actions": ["create"],
+          "after": {"rule": [{"object_ownership": "ObjectWriter"}]}
+        }
+      },
+      {
+        "address": "aws_s3_bucket_server_side_encryption_configuration.documents",
+        "mode": "managed",
+        "type": "aws_s3_bucket_server_side_encryption_configuration",
+        "change": {
+          "actions": ["create"],
+          "after": {
+            "rule": [{
+              "apply_server_side_encryption_by_default": [{"sse_algorithm": "aws:kms"}]
+            }]
+          }
+        }
+      },
+      {
+        "address": "aws_s3_bucket_policy.documents",
+        "mode": "managed",
+        "type": "aws_s3_bucket_policy",
+        "change": {
+          "actions": ["create"],
+          "after": {"policy": "{\"Version\":\"2012-10-17\",\"Statement\":[]}"}
+        }
+      },
+      {
+        "address": "aws_s3vectors_vector_bucket.knowledge_base",
+        "mode": "managed",
+        "type": "aws_s3vectors_vector_bucket",
+        "change": {
+          "actions": ["create"],
+          "after": {"encryption_configuration": [{"sse_type": "aws:kms"}]}
+        }
+      },
+      {
+        "address": "aws_s3vectors_vector_bucket_policy.knowledge_base",
+        "mode": "managed",
+        "type": "aws_s3vectors_vector_bucket_policy",
+        "change": {
+          "actions": ["create"],
+          "after": {"policy": "{\"Version\":\"2012-10-17\",\"Statement\":[]}"}
+        }
+      },
+      {
+        "address": "aws_iam_role.knowledge_base",
+        "mode": "managed",
+        "type": "aws_iam_role",
+        "change": {
+          "actions": ["create"],
+          "after": {
+            "assume_role_policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Principal\":{\"Service\":\"bedrock.amazonaws.com\"},\"Action\":\"sts:AssumeRole\"}]}"
+          }
+        }
+      },
+      {
+        "address": "aws_iam_role_policy.knowledge_base",
+        "mode": "managed",
+        "type": "aws_iam_role_policy",
+        "change": {
+          "actions": ["create"],
+          "after": {
+            "policy": "{\"Version\":\"2012-10-17\",\"Statement\":[{\"Effect\":\"Allow\",\"Action\":\"*\",\"Resource\":\"*\"}]}"
+          }
+        }
+      }
+    ]
+  }
+}
