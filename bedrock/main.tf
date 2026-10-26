@@ -79,6 +79,42 @@ resource "aws_s3_bucket_public_access_block" "documents" {
   restrict_public_buckets = true
 }
 
+resource "aws_s3_bucket_ownership_controls" "documents" {
+  bucket = aws_s3_bucket.documents.id
+
+  rule {
+    object_ownership = "BucketOwnerEnforced"
+  }
+}
+
+data "aws_iam_policy_document" "documents_transport_security" {
+  statement {
+    sid     = "DenyInsecureTransport"
+    effect  = "Deny"
+    actions = ["s3:*"]
+    resources = [
+      aws_s3_bucket.documents.arn,
+      "${aws_s3_bucket.documents.arn}/*"
+    ]
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+
+    condition {
+      test     = "Bool"
+      variable = "aws:SecureTransport"
+      values   = ["false"]
+    }
+  }
+}
+
+resource "aws_s3_bucket_policy" "documents" {
+  bucket = aws_s3_bucket.documents.id
+  policy = data.aws_iam_policy_document.documents_transport_security.json
+}
+
 resource "aws_s3_bucket_server_side_encryption_configuration" "documents" {
   bucket = aws_s3_bucket.documents.id
 
@@ -100,6 +136,38 @@ resource "aws_s3_bucket_versioning" "documents" {
 resource "aws_s3vectors_vector_bucket" "knowledge_base" {
   vector_bucket_name = "${local.name_prefix}-vectors"
   force_destroy      = var.force_destroy
+
+  encryption_configuration {
+    sse_type = "AES256"
+  }
+}
+
+data "aws_iam_policy_document" "vector_bucket_transport_security" {
+  statement {
+    sid     = "DenyInsecureTransport"
+    effect  = "Deny"
+    actions = ["s3vectors:*"]
+    resources = [
+      aws_s3vectors_vector_bucket.knowledge_base.vector_bucket_arn,
+      "${aws_s3vectors_vector_bucket.knowledge_base.vector_bucket_arn}/*"
+    ]
+
+    principals {
+      type        = "*"
+      identifiers = ["*"]
+    }
+
+    condition {
+      test     = "Bool"
+      variable = "aws:SecureTransport"
+      values   = ["false"]
+    }
+  }
+}
+
+resource "aws_s3vectors_vector_bucket_policy" "knowledge_base" {
+  vector_bucket_arn = aws_s3vectors_vector_bucket.knowledge_base.vector_bucket_arn
+  policy            = data.aws_iam_policy_document.vector_bucket_transport_security.json
 }
 
 resource "aws_s3vectors_index" "knowledge_base" {

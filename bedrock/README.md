@@ -65,12 +65,25 @@ resource "aws_s3_bucket_public_access_block" "documents" {
   ignore_public_acls      = true
   restrict_public_buckets = true
 }
+
+resource "aws_s3_bucket_ownership_controls" "documents" {
+  bucket = aws_s3_bucket.documents.id
+  rule {
+    object_ownership = "BucketOwnerEnforced"
+  }
+}
+
+resource "aws_s3_bucket_server_side_encryption_configuration" "documents" {
+  bucket = aws_s3_bucket.documents.id
+  rule {
+    apply_server_side_encryption_by_default {
+      sse_algorithm = "AES256"
+    }
+  }
+}
 ```
 
-Encryption and versioning are managed by:
-
-- `aws_s3_bucket_server_side_encryption_configuration.documents`
-- `aws_s3_bucket_versioning.documents`
+`aws_s3_bucket_policy.documents` denies non-HTTPS requests. Versioning is managed by `aws_s3_bucket_versioning.documents`.
 
 #### S3 Vectors storage
 
@@ -78,6 +91,10 @@ Encryption and versioning are managed by:
 resource "aws_s3vectors_vector_bucket" "knowledge_base" {
   vector_bucket_name = "${local.name_prefix}-vectors"
   force_destroy      = var.force_destroy
+
+  encryption_configuration {
+    sse_type = "AES256"
+  }
 }
 
 resource "aws_s3vectors_index" "knowledge_base" {
@@ -88,6 +105,8 @@ resource "aws_s3vectors_index" "knowledge_base" {
   distance_metric    = "cosine"
 }
 ```
+
+`aws_s3vectors_vector_bucket_policy.knowledge_base` denies non-HTTPS requests to vector storage.
 
 #### Bedrock models
 
@@ -119,6 +138,19 @@ resource "aws_iam_role_policy" "knowledge_base" {
 ```
 
 The project also optionally creates `aws_iam_role.bedrock_invocation` and `aws_iam_role_policy.bedrock_invoke` for Nova Lite invocation. See [`main.tf`](./main.tf) for the complete least-privilege policy statements.
+
+## No-additional-charge security controls
+
+The configuration uses native controls that do not have a separate security-service charge:
+
+- S3-managed `AES256` encryption for documents and vectors; no customer-managed KMS key
+- S3 Block Public Access
+- Bucket-owner-enforced object ownership, which disables ACL-based access
+- Bucket policies that deny requests without TLS/HTTPS
+- Least-privilege IAM permissions scoped to the selected models, document bucket, and vector index
+- Bedrock service-role trust restricted by source account and Knowledge Base ARN
+
+Normal S3 storage/request, S3 Vectors, embedding, and model-inference charges still apply. S3 versioning can increase storage charges when files are replaced or deleted because older versions remain stored. This project does not enable separately billed services such as GuardDuty, Macie, Security Hub, customer-managed KMS keys, or CloudTrail data events.
 
 ## Prerequisites
 
