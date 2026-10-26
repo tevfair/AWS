@@ -2,7 +2,7 @@
 set -eu
 
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)
-POLICY_DIR="$ROOT_DIR/policy/terraform"
+POLICY_DIR="$ROOT_DIR/policies/terraform"
 
 if command -v opa >/dev/null 2>&1; then
   OPA_BIN=$(command -v opa)

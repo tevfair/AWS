@@ -23,4 +23,4 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Run OPA policy tests
-        run: ./policy/test.sh
+        run: ./policies/test.sh

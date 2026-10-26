@@ -18,7 +18,7 @@ The policies verify the no-additional-charge controls used by the Bedrock projec
 From the repository root:
 
 ```shell Terminal
-./policy/test.sh
+./policies/test.sh
 ```
 
 The script uses an installed `opa` binary when available. Otherwise, it downloads a temporary OPA binary for the current macOS or Linux architecture and removes it when the test exits.
@@ -37,7 +37,7 @@ Evaluate it from the repository root:
 
 ```shell Terminal
 opa eval \
-  --data policy/terraform \
+  --data policies/terraform \
   --input bedrock/tfplan.json \
   'data.terraform.security.deny'
 ```
