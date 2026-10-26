@@ -13,7 +13,11 @@ The [`bedrock`](./bedrock) project deploys a retrieval-augmented generation (RAG
 - Amazon Nova Lite for on-demand answer generation
 - AWS IAM roles and policies
 
-![Amazon Bedrock Knowledge Base architecture](./bedrock/bedrock-knowledge-base-architecture.svg)
+## Architecture
+
+![Amazon Bedrock Knowledge Base architecture](./bedrock/bedrock-knowledge-base-architecture.png)
+
+Documents are uploaded to a private S3 bucket and ingested by Bedrock. Titan Text Embeddings V2 converts document chunks into vectors stored in S3 Vectors. At query time, the Knowledge Base retrieves relevant chunks and Nova Lite generates a grounded answer.
 
 ## Deploy
 
