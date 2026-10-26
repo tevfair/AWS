@@ -1,0 +1,26 @@
+name: Rego policy checks
+
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: rego-policy-checks-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  test:
+    name: Format and test Rego policies
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Run OPA policy tests
+        run: ./policy/test.sh
